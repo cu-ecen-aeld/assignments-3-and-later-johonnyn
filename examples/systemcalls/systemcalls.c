@@ -1,4 +1,8 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -10,14 +14,9 @@
 bool do_system(const char *cmd)
 {
 
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
+    int ret = system(cmd);
 
-    return true;
+    return ret == 0;
 }
 
 /**
@@ -58,6 +57,21 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    int fork_ret = fork();
+    if (fork_ret == 0) {
+        // Child process
+        execv(command[0], command);
+        // If execv returns, it must have failed
+        exit(1);
+    } else if (fork_ret > 0) {
+        // Parent process
+        int status;
+        wait(&status);
+        return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    } else {
+        // Fork failed
+        return false;
+    }
 
     va_end(args);
 
@@ -92,6 +106,37 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+
+    int fork_ret = fork();
+    if (fork_ret == 0) {
+        // Child process
+        int fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd == -1) {
+            perror("open");
+            exit(1);
+        }
+        if (dup2(fd, STDOUT_FILENO) == -1) {
+            perror("dup2");
+            close(fd);
+            exit(1);
+        }
+        close(fd);
+        execv(command[0], command);
+        // If execv returns, it must have failed
+        perror("execv");
+        exit(1);
+    } else if (fork_ret > 0) {
+        // Parent process
+        int status;
+        wait(&status);
+        va_end(args);
+        return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    } else {
+        // Fork failed
+        perror("fork");
+        va_end(args);
+        return false;
+    }
 
     va_end(args);
 
