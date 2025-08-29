@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <dir> <string>"
@@ -14,7 +14,7 @@ if [ ! -d "$FILES_DIR" ]; then
 fi
 
 FILE_COUNT=$(find "$FILES_DIR" -type f | wc -l)
-MATCH_COUNT=$(grep -r -F --include="*" "$SEARCH_STR" "$FILES_DIR" 2>/dev/null | wc -l)
+MATCH_COUNT=$(grep -r -F "$SEARCH_STR" "$FILES_DIR" 2>/dev/null | wc -l)
 
 echo "The number of files are $FILE_COUNT and the number of matching lines are $MATCH_COUNT"
     
